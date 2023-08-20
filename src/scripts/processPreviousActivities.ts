@@ -1,6 +1,6 @@
 import strava from 'strava-v3';
 import { Activity, getAccessToken } from '../strava';
-import { identifyRoute } from '../routes';
+import { calcuateEffortCount, identifyRoute } from '../routes';
 
 const counter: Record<string, number> = {};
 
@@ -18,7 +18,8 @@ const processPreviousActivities = async () => {
 
         counter[route.name] = (counter[route.name] ?? 0) + 1;
 
-        const totalEfforts = Number(route?.previousEfforts ?? 0) + counter[route.name];
+        const previousEfforts = calcuateEffortCount(route);
+        const totalEfforts = previousEfforts + counter[route.name];
         const name = `${route.name} #${totalEfforts}`;
 
         const heartRate = activity?.average_heartrate;

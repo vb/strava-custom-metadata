@@ -34,14 +34,14 @@ export const identifyRoute = (activity: Activity): StaticRoute | null => {
     return null;
 };
 
-const calcuateEffortCount = (activity: Activity, route: StaticRoute) => {
-    const effortCount = activity.similar_activities?.effort_count ?? 0;
+export const calcuateEffortCount = (route: StaticRoute, activity?: Activity) => {
     const routePreviousEfforts = Number(route?.previousEfforts ?? 0);
+    const effortCount = activity?.similar_activities?.effort_count ?? 0;
     return routePreviousEfforts + effortCount;
 };
 
 export const getRouteTitle = (route: StaticRoute, activity: Activity) => {
-    const effortCount = calcuateEffortCount(activity, route);
+    const effortCount = calcuateEffortCount(route, activity);
     const title = `${route.name} #${effortCount}`;
     return title;
 };
