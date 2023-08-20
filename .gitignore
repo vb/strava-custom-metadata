@@ -1,0 +1,6 @@
+.aws-sam/
+coverage/
+events/
+node_modules/
+package-lock.json
+.env

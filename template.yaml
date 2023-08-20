@@ -1,0 +1,37 @@
+AWSTemplateFormatVersion: '2010-09-09'
+Transform: AWS::Serverless-2016-10-31
+
+Globals:
+    Function:
+        Timeout: 3
+
+Resources:
+    StravaCustomMetadataFunction:
+        Type: AWS::Serverless::Function
+        Properties:
+            Handler: app.handler
+            Runtime: nodejs18.x
+            Architectures:
+                - x86_64
+            Events:
+                StravaCustomMetadata:
+                    Type: Api
+                    Properties:
+                        Path: /
+                        Method: any
+        Metadata:
+            BuildMethod: esbuild
+            BuildProperties:
+                Minify: true
+                Target: 'es2020'
+                Sourcemap: true
+                EntryPoints:
+                    - app.ts
+
+Outputs:
+    StravaCustomMetadataApi:
+        Value: !Sub 'https://${ServerlessRestApi}.execute-api.${AWS::Region}.amazonaws.com/Prod/'
+    StravaCustomMetadataFunction:
+        Value: !GetAtt StravaCustomMetadataFunction.Arn
+    StravaCustomMetadataFunctionIamRole:
+        Value: !GetAtt StravaCustomMetadataFunctionRole.Arn
