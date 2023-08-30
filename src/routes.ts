@@ -1,13 +1,6 @@
 import polyline from '@mapbox/polyline';
 import lineMatch from 'linematch';
-import routes from '../routes.json';
-import { Activity } from './strava';
-
-type StaticRoute = {
-    name: string;
-    encodedPolyline: string;
-    previousEfforts?: number;
-};
+import { Activity, Route } from './strava';
 
 const decodePolyline = (encoded: string) => polyline.decode(encoded);
 
@@ -20,27 +13,31 @@ const doesRoutesMatch = (route1: string, route2: string) => {
     return result.length === 0;
 };
 
-export const identifyRoute = (activity: Activity): StaticRoute | null => {
+export const identifyRoute = (activity: Activity, routes: Route[]): Route | null => {
     const currentRoute = activity.map?.polyline ?? activity.map?.summary_polyline;
     if (!currentRoute) {
         return null;
     }
 
     for (const route of routes) {
-        if (doesRoutesMatch(route.encodedPolyline, currentRoute)) {
+        const routePolyline = route.map?.polyline ?? route.map?.summary_polyline;
+        if (!routePolyline) {
+            continue;
+        }
+        if (doesRoutesMatch(routePolyline, currentRoute)) {
             return route;
         }
     }
     return null;
 };
 
-export const calcuateEffortCount = (route: StaticRoute, activity?: Activity) => {
-    const routePreviousEfforts = Number(route?.previousEfforts ?? 0);
+export const calcuateEffortCount = (route: Route, activity?: Activity) => {
+    const routePreviousEfforts = parseInt(route.description?.match(/Previous Efforts: (\d+)/)?.[1] ?? '0', 10);
     const effortCount = activity?.similar_activities?.effort_count ?? 0;
     return routePreviousEfforts + effortCount;
 };
 
-export const getRouteTitle = (route: StaticRoute, activity: Activity) => {
+export const getRouteTitle = (route: Route, activity: Activity) => {
     const effortCount = calcuateEffortCount(route, activity);
     const title = `${route.name} #${effortCount}`;
     return title;

@@ -2,12 +2,22 @@
 const routesActual = jest.requireActual('../../src/routes');
 const stravaActual = jest.requireActual('../../src/strava');
 
-import { APIGatewayProxyResult } from 'aws-lambda';
 import { lambdaHandler } from '../../src';
 import { expect, describe, it } from '@jest/globals';
 
-const stravaEvent = (type: string, id: number) =>
-    `{"aspect_type":"${type}","event_time":1,"object_id":${id},"object_type":"activity","owner_id":3,"subscription_id":4,"updates":{"title":"Test"}}`;
+const stravaEvent = (type: string, id: number) => {
+    return JSON.stringify({
+        aspect_type: type,
+        object_id: id,
+        event_time: 1,
+        object_type: 'activity',
+        owner_id: 3,
+        subscription_id: 4,
+        updates: {
+            title: 'Test',
+        },
+    });
+};
 
 let mockUpdateActivity: jest.Mock;
 
@@ -25,7 +35,7 @@ jest.mock('../../src/routes', () => ({
         if (id === 1) {
             return Promise.resolve({
                 name: 'Route',
-                previousEfforts: 10,
+                description: 'Previous Efforts: 10',
             });
         }
         if (id === 2) {
@@ -34,7 +44,7 @@ jest.mock('../../src/routes', () => ({
         if (id === 3) {
             return Promise.resolve({
                 name: 'Another Route',
-                previousEfforts: 31,
+                description: 'Previous Efforts: 31',
             });
         }
     },
@@ -48,6 +58,15 @@ jest.mock('../../src/environment', () => ({
 
 jest.mock('../../src/strava', () => ({
     ...stravaActual,
+    getRoutes: () => {
+        return Promise.resolve([
+            {
+                id: 1,
+                name: 'Route',
+                description: 'Previous Efforts: 10',
+            },
+        ]);
+    },
     getAccessToken: () => Promise.resolve('123'),
     getActivity: (args: any) => {
         const { id } = args;
@@ -86,6 +105,7 @@ jest.mock('../../src/strava', () => ({
         }
     },
     updateActivity: (args: any) => {
+        console.log(args);
         mockUpdateActivity = jest.fn();
         return mockUpdateActivity(args);
     },
@@ -99,17 +119,16 @@ describe('Handler', function () {
     it('Returns 204 on a GET request', async () => {
         const event = {
             httpMethod: 'GET',
-            body: '',
         } as any;
 
-        const result: APIGatewayProxyResult = await lambdaHandler(event);
+        const result = await lambdaHandler(event);
         expect(result.statusCode).toEqual(204);
     });
 
     it('Returns the hub.challange if correct hub.verify_token', async () => {
         const event = {
             httpMethod: 'GET',
-            body: '',
+
             queryStringParameters: {
                 'hub.mode': 'subscribe',
                 'hub.challenge': 'challenge',
@@ -117,7 +136,7 @@ describe('Handler', function () {
             },
         } as any;
 
-        const result: APIGatewayProxyResult = await lambdaHandler(event);
+        const result = await lambdaHandler(event);
         expect(result.statusCode).toEqual(200);
         expect(result.body).toEqual(
             JSON.stringify({
@@ -129,7 +148,7 @@ describe('Handler', function () {
     it('Returns 400 if invalid hub.verify_token', async () => {
         const event = {
             httpMethod: 'GET',
-            body: '',
+
             queryStringParameters: {
                 'hub.mode': 'subscribe',
                 'hub.challenge': 'challenge',
@@ -137,7 +156,7 @@ describe('Handler', function () {
             },
         } as any;
 
-        const result: APIGatewayProxyResult = await lambdaHandler(event);
+        const result = await lambdaHandler(event);
         expect(result.statusCode).toEqual(403);
         expect(result.body).toEqual(
             JSON.stringify({
@@ -149,10 +168,9 @@ describe('Handler', function () {
     it('return 400 if invalid POST request', async () => {
         const event = {
             httpMethod: 'POST',
-            body: '',
         } as any;
 
-        const result: APIGatewayProxyResult = await lambdaHandler(event);
+        const result = await lambdaHandler(event);
         expect(result.statusCode).toEqual(400);
         expect(result.body).toEqual(
             JSON.stringify({
@@ -167,7 +185,7 @@ describe('Handler', function () {
             body: stravaEvent('invalid', 2),
         } as any;
 
-        const result: APIGatewayProxyResult = await lambdaHandler(event);
+        const result = await lambdaHandler(event);
         expect(result.statusCode).toEqual(400);
         expect(result.body).toEqual(
             JSON.stringify({
@@ -182,7 +200,7 @@ describe('Handler', function () {
             body: stravaEvent('update', 2),
         } as any;
 
-        const result: APIGatewayProxyResult = await lambdaHandler(event);
+        const result = await lambdaHandler(event);
         expect(result.statusCode).toEqual(204);
         expect(result.body).toEqual('');
     });
@@ -193,7 +211,7 @@ describe('Handler', function () {
             body: stravaEvent('delete', 2),
         } as any;
 
-        const result: APIGatewayProxyResult = await lambdaHandler(event);
+        const result = await lambdaHandler(event);
         expect(result.statusCode).toEqual(204);
         expect(result.body).toEqual('');
     });
@@ -204,10 +222,9 @@ describe('Handler', function () {
             body: stravaEvent('create', 1),
         } as any;
 
-        const result: APIGatewayProxyResult = await lambdaHandler(event);
+        const result = await lambdaHandler(event);
         expect(mockUpdateActivity).toBeCalledWith({
             access_token: '123',
-            description: 'MAF ❤️ 100 bpm',
             id: 1,
             name: 'Route #12',
         });
@@ -221,10 +238,9 @@ describe('Handler', function () {
             body: stravaEvent('create', 3),
         } as any;
 
-        const result: APIGatewayProxyResult = await lambdaHandler(event);
+        const result = await lambdaHandler(event);
         expect(mockUpdateActivity).toBeCalledWith({
             access_token: '123',
-            description: 'MAF ❤️ 100 bpm',
             id: 3,
             name: 'Another Route #54',
         });
@@ -238,7 +254,7 @@ describe('Handler', function () {
             body: stravaEvent('create', 2),
         } as any;
 
-        const result: APIGatewayProxyResult = await lambdaHandler(event);
+        const result = await lambdaHandler(event);
         expect(result.statusCode).toEqual(204);
     });
 });

@@ -23,11 +23,9 @@ This repo contains a function that will update your Strava activity title with t
 
 ### Identifiying a route
 
-- Put your predefined routes in the `routes.json` file
- - Create a route by taking one of your previous activities and save the polyline (`activity.map.polyline`) to the `routes.json` file
- - Each route should have a `name` and `encodedPolyline` property
-- The script compares the encoded polyline of your activity to the encoded polylines of your predefined routes with the help of the `linematch` package
-- If the activity matches a predefined route, the script will update the title of the activity with the name of the route and how many times you've run it
+- Identify your most common running routes and save them as routes in Strava
+- The script compares the polyline of your activity to the polylines of your routes with the help of the `linematch` package
+- If the activity matches a route, the script will update the title of the activity with the name of the route and how many times you've run it
 
 ## Setup
 
@@ -78,5 +76,4 @@ aws lambda update-function-configuration --function-name {fn name} --environment
 ## Todo 
 
 - [ ] Support for detecting interval training
-- [ ] Host predefined routes in Google Sheets
 - [ ] Support for setting title and description according to a template (e.g. "Ran {route} for the {nth} time")

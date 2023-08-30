@@ -1,5 +1,5 @@
 import { z } from 'zod';
-import strava, { DetailedActivityResponse } from 'strava-v3';
+import strava, { AthleteRouteResponse, DetailedActivityResponse } from 'strava-v3';
 import { environment } from './environment';
 export interface Activity extends DetailedActivityResponse {
     similar_activities?: {
@@ -7,6 +7,8 @@ export interface Activity extends DetailedActivityResponse {
     };
     average_heartrate?: number;
 }
+
+export type Route = AthleteRouteResponse;
 
 export const StravaPushVerification = z.object({
     'hub.mode': z.literal('subscribe'),
@@ -38,6 +40,11 @@ export const getAccessToken = async () => {
 export const getActivity = async (args: { id: number; access_token: string }): Promise<Activity> => {
     const activity = await strava.activities.get(args);
     return activity;
+};
+
+export const getRoutes = async (args: { access_token: string }): Promise<Route[]> => {
+    const routes = await strava.athlete.listRoutes(args);
+    return routes;
 };
 
 export const updateActivity = async (args: {

@@ -5,6 +5,7 @@ import {
     StravaPushVerification,
     getAccessToken,
     getActivity,
+    getRoutes,
     updateActivity,
 } from './strava';
 import { getRouteTitle, identifyRoute } from './routes';
@@ -52,7 +53,9 @@ const handleEventReceived = async (event: APIGatewayProxyEvent): Promise<APIGate
 
         const access_token = await getAccessToken();
         const activity = await getActivity({ id: body.object_id, access_token });
-        const route = await identifyRoute(activity);
+        const routes = await getRoutes({ access_token });
+
+        const route = await identifyRoute(activity, routes);
 
         if (!route) {
             return {
@@ -62,19 +65,11 @@ const handleEventReceived = async (event: APIGatewayProxyEvent): Promise<APIGate
         }
 
         const title = getRouteTitle(route, activity);
-        const heartRate = activity?.average_heartrate;
-        let description = null;
-
-        if (heartRate) {
-            const heartRateFloor = Math.floor(heartRate);
-            description = `${heartRate <= 145 ? 'MAF ' : ''}❤️ ${heartRateFloor} bpm`;
-        }
 
         await updateActivity({
             id: body.object_id,
             access_token,
             name: title,
-            ...(description && { description }),
         });
 
         return {
